@@ -1,4 +1,41 @@
-﻿function Piglet 
+﻿<#
+.SYNOPSIS
+PowerShell implementation of the popular Figlet command line utility. Transforms
+input text into ASCII art representation using a variety of different fonts.
+
+MIT license.
+
+Copyright (c) 2020-present, Brandon Wood.
+All rights reserved.
+
+.DESCRIPTION
+This script reads characters from the specified font file, and translates the
+input text into that ASCII font.
+
+The default set of Figlet fonts are included with Piglet by default. Additional
+fonts can be easily installed by copying them into the fonts directory of this
+module. Additional fonts can be found here: 
+    
+    https://github.com/cmatsuoka/figlet-fonts
+
+Example:
+PS C:\> Import-Module Piglet
+PS C:\> Piglet "Hello, world!"
+  _   _          _   _                                           _       _   _ 
+ | | | |   ___  | | | |   ___         __      __   ___    _ __  | |   __| | | |
+ | |_| |  / _ \ | | | |  / _ \        \ \ /\ / /  / _ \  | '__| | |  / _` | | |
+ |  _  | |  __/ | | | | | (_) |  _     \ V  V /  | (_) | | |    | | | (_| | |_|
+ |_| |_|  \___| |_| |_|  \___/  ( )     \_/\_/    \___/  |_|    |_|  \__,_| (_)
+                                |/                                             
+
+.PARAMETER Text
+String to convert to ASCII.
+
+.PARAMETER Font
+Optional. Name of font to use for transforming text.
+#>
+
+function Piglet 
 {
     [CmdletBinding()]
     param(
@@ -6,6 +43,7 @@
         [String]
         $Text,
 
+        [String]
         $Font = "standard"
     )
 
