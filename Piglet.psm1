@@ -50,6 +50,7 @@ function Piglet
     function GetFontInfo($FontName)
     {
         $fontFilePath = Join-Path $PSScriptRoot "fonts/$Font.flf"
+        Write-Verbose "Loading font from path $fontFilePath"
     
         if (!(Test-Path -Path $fontFilePath))
         {
@@ -83,35 +84,53 @@ function Piglet
         # loop through required chars
         foreach ($char in $requiredChars)
         {
-            $firstLine = $fontContent[$fileIndex]
-            $terminator = $firstLine.Substring($firstLine.Length - 1)
-
-            $charLines = @()
-
-            # loop through each character
-            for ($i = 0; $i -lt $fontInfo.Height; $i++)
-            {
-                $charIndex = $fileIndex + $i
-            
-                $charLine = $fontContent[$charIndex]
-                $charLine = $charLine.Replace($terminator, "")
-                $charLine = $charLine.Replace($fontInfo.HardBlank, " ")
-                #Write-Host $charLine
-            
-                $charLines += $charLine
-            }
-
-            #Write-Host "------------------"
-        
+            $charLines = GetNextFontChar($fileIndex)
             $fontChars[$char] = $charLines
             $fileIndex += $fontInfo.Height
         }
 
-        # TODO: read additional chars defined in font file
+        # read additional chars defined in font file
+        while ($fileIndex -lt $fontContent.Length)
+        {
+            $charDefLine = $fontContent[$fileIndex]
+            $parts = $charDefLine.Split(' ')
+            # TODO: handle hex/octal character codes
+            $char = $parts[0]
+            $fileIndex++
+
+            $charLines = GetNextFontChar($fileIndex)
+            $fontChars[$char] = $charLines
+            $fileIndex += $fontInfo.Height
+        }
 
         $fontInfo | Add-Member -Name "Characters" -Value $fontChars -MemberType NoteProperty
 
         return $fontInfo
+    }
+
+    function GetNextFontChar()
+    {
+        $firstLine = $fontContent[$fileIndex]
+        $terminator = $firstLine.Substring($firstLine.Length - 1)
+
+        $charLines = @()
+
+        # loop through each character
+        for ($i = 0; $i -lt $fontInfo.Height; $i++)
+        {
+            $charIndex = $fileIndex + $i
+            
+            $charLine = $fontContent[$charIndex]
+            $charLine = $charLine.Replace($terminator, "")
+            $charLine = $charLine.Replace($fontInfo.HardBlank, " ")
+            #Write-Host $charLine
+            
+            $charLines += $charLine
+        }
+
+        #Write-Host "------------------"
+
+        return $charLines
     }
 
     $chars = $Text.ToCharArray()
@@ -119,10 +138,12 @@ function Piglet
     
     $outputLines = @()
 
+    # output entire string one horizontal line at a time
     for ($i = 0; $i -lt $fontInfo.Height; $i++)
     {
         $line = ""
 
+        # build text line from the corresponding line of each character
         foreach ($c in $chars)
         {
             $charCode = [int] $c
@@ -132,6 +153,7 @@ function Piglet
                 $fontChar = $fontInfo.Characters[$charCode]            
                 $line += $fontChar[$i]
             }
+            # TODO: how to better handle unsupported chars?
         }
 
         $outputLines += $line
