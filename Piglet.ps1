@@ -21,9 +21,12 @@
         foreach ($c in $chars)
         {
             $charCode = [int] $c
-            $fontChar = $fontInfo.Characters[$charCode]
-            
-            $line += $fontChar[$i]            
+
+            if ($fontInfo.Characters.ContainsKey($charCode))
+            {
+                $fontChar = $fontInfo.Characters[$charCode]            
+                $line += $fontChar[$i]
+            }
         }
 
         $outputLines += $line
@@ -101,3 +104,4 @@ cls
 
 Piglet "Hello, world!"
 Piglet "ÄäÖöÜüß"
+Piglet "ÄäËëÏïÖöÜüŸÿ"
