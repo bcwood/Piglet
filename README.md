@@ -1,4 +1,12 @@
-# Piglet
+~~~
+  ____    _           _          _   
+ |  _ \  (_)   __ _  | |   ___  | |_ 
+ | |_) | | |  / _` | | |  / _ \ | __|
+ |  __/  | | | (_| | | | |  __/ | |_ 
+ |_|     |_|  \__, | |_|  \___|  \__|
+              |___/                  
+~~~
+
 PowerShell implementation of the popular [Figlet](http://www.figlet.org/) command line utility. This is written with the intention of being 100% compatible with existing Figlet fonts. The default set of fonts has been included here, with many more available.
 
 ## More info
