@@ -59,18 +59,6 @@ function GetFontInfo($FontName)
     $fontInfo | Add-Member -Name "FullLayout" -Value ([int]$parts[7]) -MemberType NoteProperty
     $fontInfo | Add-Member -Name "CodetagCount" -Value ([int]$parts[8]) -MemberType NoteProperty
 
-    Write-Verbose "Header = $header"
-    Write-Verbose "Signature = $($fontInfo.Signature)"
-    Write-Verbose "Hard Blank = $($fontInfo.HardBlank)"
-    Write-Verbose "Height = $($fontInfo.Height)"
-    Write-Verbose "Baseline = $($fontInfo.Baseline)"
-    Write-Verbose "Max Length = $($fontInfo.MaxLength)"
-    Write-Verbose "Old Layout = $($fontInfo.OldLayout)"
-    Write-Verbose "Comment Lines = $($fontInfo.CommentLines)"
-    Write-Verbose "Print Direction = $($fontInfo.PrintDirection)"
-    Write-Verbose "Full Layout = $($fontInfo.FullLayout)"
-    Write-Verbose "Codetag Count = $($fontInfo.CodetagCount)"
-
     $fontChars = New-Object "System.Collections.Generic.Dictionary[int,string[]]"
     $fileIndex = $fontInfo.CommentLines + 1
     
@@ -111,5 +99,5 @@ function GetFontInfo($FontName)
 
 cls
 
-Piglet "Hello, world!" #-Verbose
+Piglet "Hello, world!"
 Piglet "ÄäÖöÜüß"
