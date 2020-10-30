@@ -14,12 +14,9 @@ input text into that ASCII font.
 
 The default set of Figlet fonts are included with Piglet by default. Additional
 fonts can be easily installed by copying them into the fonts directory of this
-module. Additional fonts can be found here: 
-    
-    https://github.com/cmatsuoka/figlet-fonts
+module.
 
-Example:
-PS C:\> Import-Module Piglet
+.EXAMPLE
 PS C:\> Piglet "Hello, world!"
   _   _          _   _                                           _       _   _ 
  | | | |   ___  | | | |   ___         __      __   ___    _ __  | |   __| | | |
@@ -28,11 +25,26 @@ PS C:\> Piglet "Hello, world!"
  |_| |_|  \___| |_| |_|  \___/  ( )     \_/\_/    \___/  |_|    |_|  \__,_| (_)
                                 |/                                             
 
+.EXAMPLE
+PS C:\> Piglet "Hello, world!" -Font "script"
+  ,            _    _                                    _           
+ /|   |       | |  | |                                  | |     |   |
+  |___|   _   | |  | |   __                 __    ,_    | |   __|   |
+  |   |\ |/   |/   |/   /  \_     |  |  |_ /  \_ /  |   |/   /  |   |
+  |   |/ |__/ |__/ |__/ \__/  o    \/ \/   \__/     |_/ |__/ \_/|_/ o
+                              /                                      
+                                                                     
 .PARAMETER Text
 String to convert to ASCII.
 
 .PARAMETER Font
 Optional. Name of font to use for transforming text.
+
+.LINK
+Additional fonts can be found here: https://github.com/cmatsuoka/figlet-fonts
+
+.LINK
+FIGfont file format: http://www.jave.de/figlet/figfont.html
 #>
 
 function Piglet 
