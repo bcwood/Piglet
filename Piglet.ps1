@@ -72,12 +72,13 @@ function GetFontInfo($FontName)
     Write-Verbose "Codetag Count = $($fontInfo.CodetagCount)"
 
     $fontChars = New-Object "System.Collections.Generic.Dictionary[int,string[]]"
-    $charCode = 32
-    $maxCharCode = 126
     $fileIndex = $fontInfo.CommentLines + 1
-
-    # loop through entire file
-    while ($fileIndex -lt $fontContent.Length -and $charCode -le $maxCharCode)
+    
+    $requiredChars = @(32..126)
+    $requiredChars += @(196, 214, 220, 228, 246, 252, 223)
+    
+    # loop through required chars
+    foreach ($char in $requiredChars)
     {
         $firstLine = $fontContent[$fileIndex]
         $terminator = $firstLine.Substring($firstLine.Length - 1)
@@ -99,22 +100,11 @@ function GetFontInfo($FontName)
 
         #Write-Host "------------------"
         
-        $fontChars[$charCode] = $charLines
+        $fontChars[$char] = $charLines
         $fileIndex += $fontInfo.Height
-        $charCode++
     }
 
     $fontInfo | Add-Member -Name "Characters" -Value $fontChars -MemberType NoteProperty
-
-    #foreach ($key in $fontChars.Keys)
-    #{
-    #    foreach ($line in $fontChars[$key])
-    #    {
-    #        Write-Host $line            
-    #    }
-    #
-    #    Write-Host "-----------"
-    #}
 
     return $fontInfo
 }
@@ -122,3 +112,4 @@ function GetFontInfo($FontName)
 cls
 
 Piglet "Hello, world!" #-Verbose
+Piglet "ÄäÖöÜüß"
