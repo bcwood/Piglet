@@ -11,14 +11,26 @@ PowerShell implementation of the popular [Figlet](http://www.figlet.org/) comman
 
 ## Usage
 
+Basic usage:
 ~~~
-PS > Piglet "Hello, world!"
+PS C:\> Piglet "Hello, world!"
   _   _          _   _                                           _       _   _ 
  | | | |   ___  | | | |   ___         __      __   ___    _ __  | |   __| | | |
  | |_| |  / _ \ | | | |  / _ \        \ \ /\ / /  / _ \  | '__| | |  / _` | | |
  |  _  | |  __/ | | | | | (_) |  _     \ V  V /  | (_) | | |    | | | (_| | |_|
  |_| |_|  \___| |_| |_|  \___/  ( )     \_/\_/    \___/  |_|    |_|  \__,_| (_)
                                 |/                                             
+~~~
+
+Specify font:
+~~~
+PS C:\> Piglet "Hello, world!" -Font "script"
+  ,            _    _                                    _           
+ /|   |       | |  | |                                  | |     |   |
+  |___|   _   | |  | |   __                 __    ,_    | |   __|   |
+  |   |\ |/   |/   |/   /  \_     |  |  |_ /  \_ /  |   |/   /  |   |
+  |   |/ |__/ |__/ |__/ \__/  o    \/ \/   \__/     |_/ |__/ \_/|_/ o
+                              /                                      
 ~~~
 
 ## More info
