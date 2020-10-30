@@ -74,7 +74,7 @@ function Piglet
 
 function GetFontInfo($FontName)
 {
-    $fontFilePath = "$PSScriptRoot/fonts/$Font.flf"
+    $fontFilePath = Join-Path $PSScriptRoot "fonts/$Font.flf"
     
     if (!(Test-Path -Path $fontFilePath))
     {
