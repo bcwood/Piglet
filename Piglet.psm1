@@ -39,6 +39,10 @@ String to convert to ASCII.
 
 .PARAMETER Font
 Optional. Name of font to use for transforming text.
+The default set of fonts are:
+
+    banner, big, block, bubble, digital, ivrit, lean, mini, script, shadow, slant,
+    small, smscript, smshadow, smslant, standard, term
 
 .LINK
 Additional fonts can be found here: https://github.com/cmatsuoka/figlet-fonts
