@@ -44,12 +44,19 @@ The default set of fonts are:
     banner, big, block, bubble, digital, ivrit, lean, mini, script, shadow, slant,
     small, smscript, smshadow, smslant, standard, term
 
-.PARAMETER Color
-Optional. Color of the output text.
+.PARAMETER ForegroundColor
+Optional. Foreground color of the output text.
 Available color choices are:
 
     Black, Blue, Cyan, DarkBlue, DarkCyan, DarkGray, DarkGreen, DarkMagenta, 
     DarkRed, DarkYellow, Gray, Green, Magenta, Rainbow, Red, White, Yellow
+
+.PARAMETER BackgroundColor
+Optional. Background color of the output text.
+Available color choices are:
+
+    Black, Blue, Cyan, DarkBlue, DarkCyan, DarkGray, DarkGreen, DarkMagenta, 
+    DarkRed, DarkYellow, Gray, Green, Magenta, Red, White, Yellow
 
 .LINK
 Additional fonts can be found here: https://github.com/cmatsuoka/figlet-fonts
@@ -69,14 +76,23 @@ function Piglet
         [String]
         $Font = "standard",
 
-        [ValidateSet("Black", "Blue", "Cyan", "DarkBlue", "DarkCyan", "DarkGray",
-                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray",
+        [ValidateSet("Black", "Blue", "Cyan", "DarkBlue", "DarkCyan", "DarkGray", 
+                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray", 
                      "Green", "Magenta", "Rainbow", "Red", "White", "Yellow")]
-        [String] $Color = "White"
+        [String] $ForegroundColor = "Default",
+
+        [ValidateSet("Black", "Blue", "Cyan", "DarkBlue", "DarkCyan", "DarkGray",
+                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray", 
+                     "Green", "Magenta", "Red", "White", "Yellow")]
+        [String] $BackgroundColor = "Default"
     )
 
-    function GetFontInfo($FontName)
+    function Get-FontInfo
     {
+        param(
+            [String] $FontName
+        )
+
         $fontFilePath = Join-Path $PSScriptRoot "fonts/$Font.flf"
         Write-Verbose "Loading font from path $fontFilePath"
     
@@ -88,7 +104,7 @@ function Piglet
         $fontContent = Get-Content $fontFilePath
 
         # parse header record
-        $header = $fontContent[0]    
+        $header = $fontContent[0]
         $parts = $header.Split(' ')
     
         $fontInfo = New-Object -TypeName PSObject
@@ -112,7 +128,7 @@ function Piglet
         # loop through required chars
         foreach ($char in $requiredChars)
         {
-            $charLines = GetNextFontChar($fileIndex)
+            $charLines = Get-NextFontChar($fileIndex)
             $fontChars[$char] = $charLines
             $fileIndex += $fontInfo.Height
         }
@@ -126,7 +142,7 @@ function Piglet
             $char = $parts[0]
             $fileIndex++
 
-            $charLines = GetNextFontChar($fileIndex)
+            $charLines = Get-NextFontChar($fileIndex)
             $fontChars[$char] = $charLines
             $fileIndex += $fontInfo.Height
         }
@@ -136,7 +152,7 @@ function Piglet
         return $fontInfo
     }
 
-    function GetNextFontChar()
+    function Get-NextFontChar
     {
         $firstLine = $fontContent[$fileIndex]
         $terminator = $firstLine.Substring($firstLine.Length - 1)
@@ -161,16 +177,29 @@ function Piglet
         return $charLines
     }
 
-    function Write-RainbowText([String]$line)
+    function Write-RainbowText
     {
+        param(
+            [String] $Line,
+            [String] $BackgroundColor
+        )
+
         # as close to Roy G. Biv as we can get with the available colors ;)
         $colors = @("Red", "DarkYellow", "Yellow", "Green", "Blue", "Magenta", "DarkMagenta")
         $colorIndex = 0
 
-        foreach ($char in $line.ToCharArray())
+        foreach ($char in $Line.ToCharArray())
         {
             $color = $colors[$colorIndex % $colors.Length]
-            Write-Host $char -ForegroundColor $color -NoNewline
+
+            if ($BackgroundColor -ieq "Default")
+            {
+                Write-Host $char -ForegroundColor $color -NoNewline
+            }
+            else
+            {
+                Write-Host $char -ForegroundColor $color -BackgroundColor $BackgroundColor -NoNewline
+            }
 
             $colorIndex++
         }
@@ -178,8 +207,34 @@ function Piglet
         Write-Host ""
     }
 
+    function Write-Text
+    {
+        param(
+            [String] $Line,
+            [String] $ForegroundColor,
+            [String] $BackgroundColor
+        )
+
+        if ($ForegroundColor -ieq "Default" -and $BackgroundColor -ieq "Default")
+        {
+            Write-Host $Line
+        }
+        elseif ($ForegroundColor -ine "Default" -and $BackgroundColor -ieq "Default")
+        {
+            Write-Host $Line -ForegroundColor $ForegroundColor
+        }
+        elseif ($ForegroundColor -ieq "Default" -and $BackgroundColor -ine "Default")
+        {
+            Write-Host $Line -BackgroundColor $BackgroundColor
+        }
+        else
+        {
+            Write-Host $Line -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
+        }
+    }
+
     $chars = $Text.ToCharArray()
-    $fontInfo = GetFontInfo($Font)
+    $fontInfo = Get-FontInfo($Font)
     
     # output entire string one horizontal line at a time
     for ($i = 0; $i -lt $fontInfo.Height; $i++)
@@ -202,13 +257,13 @@ function Piglet
         # remove leading space from output
         $line = $line.Substring(1)
 
-        if ($Color -ieq "Rainbow")
+        if ($ForegroundColor -ieq "Rainbow")
         {
-            Write-RainbowText $line
+            Write-RainbowText $line -BackgroundColor $BackgroundColor
         }
         else
         {
-            Write-Host $line -ForegroundColor $Color
+            Write-Text -Line $line -ForegroundColor $ForegroundColor -BackgroundColor $BackgroundColor
         }
     }
 }
