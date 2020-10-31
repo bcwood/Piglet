@@ -44,6 +44,13 @@ The default set of fonts are:
     banner, big, block, bubble, digital, ivrit, lean, mini, script, shadow, slant,
     small, smscript, smshadow, smslant, standard, term
 
+.PARAMETER Color
+Optional. Color of the output text.
+Available color choices are:
+
+    Black, Blue, Cyan, DarkBlue, DarkCyan, DarkGray, DarkGreen, DarkMagenta, 
+    DarkRed, DarkYellow, Gray, Green, Magenta, Red, White, Yellow
+
 .LINK
 Additional fonts can be found here: https://github.com/cmatsuoka/figlet-fonts
 
@@ -60,7 +67,12 @@ function Piglet
         $Text,
 
         [String]
-        $Font = "standard"
+        $Font = "standard",
+
+        [ValidateSet("Black", "Blue", "Cyan", "DarkBlue", "DarkCyan", "DarkGray",
+                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray", "Green",
+                     "Magenta", "Red", "White", "Yellow")]
+        [String] $Color = "White"
     )
 
     function GetFontInfo($FontName)
@@ -173,7 +185,7 @@ function Piglet
         }
 
         $outputLines += $line
-        Write-Host $line
+        Write-Host $line -ForegroundColor $Color
     }
 }
 
