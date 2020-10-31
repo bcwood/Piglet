@@ -49,7 +49,7 @@ Optional. Color of the output text.
 Available color choices are:
 
     Black, Blue, Cyan, DarkBlue, DarkCyan, DarkGray, DarkGreen, DarkMagenta, 
-    DarkRed, DarkYellow, Gray, Green, Magenta, Red, White, Yellow
+    DarkRed, DarkYellow, Gray, Green, Magenta, Rainbow, Red, White, Yellow
 
 .LINK
 Additional fonts can be found here: https://github.com/cmatsuoka/figlet-fonts
@@ -70,8 +70,8 @@ function Piglet
         $Font = "standard",
 
         [ValidateSet("Black", "Blue", "Cyan", "DarkBlue", "DarkCyan", "DarkGray",
-                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray", "Green",
-                     "Magenta", "Red", "White", "Yellow")]
+                     "DarkGreen", "DarkMagenta", "DarkRed", "DarkYellow", "Gray",
+                     "Green", "Magenta", "Rainbow", "Red", "White", "Yellow")]
         [String] $Color = "White"
     )
 
@@ -161,11 +161,26 @@ function Piglet
         return $charLines
     }
 
+    function Write-RainbowText([String]$line)
+    {
+        # as close to Roy G. Biv as we can get with the available colors ;)
+        $colors = @("Red", "DarkYellow", "Yellow", "Green", "Blue", "Magenta", "DarkMagenta")
+        $colorIndex = 0
+
+        foreach ($char in $line.ToCharArray())
+        {
+            $color = $colors[$colorIndex % $colors.Length]
+            Write-Host $char -ForegroundColor $color -NoNewline
+
+            $colorIndex++
+        }
+
+        Write-Host ""
+    }
+
     $chars = $Text.ToCharArray()
     $fontInfo = GetFontInfo($Font)
     
-    $outputLines = @()
-
     # output entire string one horizontal line at a time
     for ($i = 0; $i -lt $fontInfo.Height; $i++)
     {
@@ -184,8 +199,17 @@ function Piglet
             # TODO: how to better handle unsupported chars?
         }
 
-        $outputLines += $line
-        Write-Host $line -ForegroundColor $Color
+        # remove leading space from output
+        $line = $line.Substring(1)
+
+        if ($Color -ieq "Rainbow")
+        {
+            Write-RainbowText $line
+        }
+        else
+        {
+            Write-Host $line -ForegroundColor $Color
+        }
     }
 }
 
