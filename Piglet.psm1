@@ -138,13 +138,16 @@ function Piglet
         {
             $charDefLine = $fontContent[$fileIndex]
             $parts = $charDefLine.Split(' ')
-            # TODO: handle hex/octal character codes
-            $char = $parts[0]
-            $fileIndex++
+            
+            # TODO: handle negative values
+            if ($parts[0].Substring(0, 1) -ne "-")
+            {            
+                $char = [int] $parts[0]
+                $charLines = Get-NextFontChar($fileIndex + 1)
+                $fontChars[$char] = $charLines
+            }
 
-            $charLines = Get-NextFontChar($fileIndex)
-            $fontChars[$char] = $charLines
-            $fileIndex += $fontInfo.Height
+            $fileIndex += $fontInfo.Height + 1
         }
 
         $fontInfo | Add-Member -Name "Characters" -Value $fontChars -MemberType NoteProperty
