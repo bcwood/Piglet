@@ -9,7 +9,7 @@
 
 PowerShell implementation of the popular [Figlet](http://www.figlet.org/) command line utility. This is written with the intention of being 100% compatible with existing Figlet fonts. The default set of fonts has been included here, with many more available.
 
-## Usage
+## Examples
 
 Basic usage:
 ~~~
@@ -31,6 +31,16 @@ PS C:\> Piglet "Hello, world!" -Font "script"
   |   |\ |/   |/   |/   /  \_     |  |  |_ /  \_ /  |   |/   /  |   |
   |   |/ |__/ |__/ |__/ \__/  o    \/ \/   \__/     |_/ |__/ \_/|_/ o
                               /                                      
+~~~
+
+You can also pipe output from another command into Piglet:
+~~~
+PS C:\> Get-Date -Format "MM/dd/yyyy" | Piglet
+ _   _      __   ___    ____       __  ____     ___    ____     ___  
+/ | / |    / /  / _ \  | ___|     / / |___ \   / _ \  |___ \   / _ \ 
+| | | |   / /  | | | | |___ \    / /    __) | | | | |   __) | | | | |
+| | | |  / /   | |_| |  ___) |  / /    / __/  | |_| |  / __/  | |_| |
+|_| |_| /_/     \___/  |____/  /_/    |_____|  \___/  |_____|  \___/ 
 ~~~
 
 ## More info
