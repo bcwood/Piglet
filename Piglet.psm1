@@ -160,7 +160,6 @@ function Piglet
     }
 }
 
-
 function Get-FontInfo
 {
     param(
@@ -199,7 +198,6 @@ function Get-FontInfo
     {
         throw "Unrecognized file format!"
     }
-
 
     # parse header record
     $header = $fontFileReader.ReadLine()
@@ -252,6 +250,9 @@ function Get-FontInfo
             Get-NextFontChar $fontFileReader $fontInfo | Out-Null
         }
     }
+
+    $fontFileReader.Close()
+    $fontFileStream.Close()
 
     $fontInfo | Add-Member -Name "Characters" -Value $fontChars -MemberType NoteProperty
 
