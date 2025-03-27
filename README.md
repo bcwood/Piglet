@@ -9,6 +9,8 @@
 
 PowerShell implementation of the popular [Figlet](http://www.figlet.org/) command line utility. This is written with the intention of being 100% compatible with existing Figlet fonts. The default set of fonts has been included here, with many more available.
 
+Piglet is compatible with both powershell.exe (v5) and pwsh.exe (v7).
+
 ## Examples
 
 Basic usage:
