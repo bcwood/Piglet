@@ -1,5 +1,8 @@
-﻿$script:fontCache = @{}
+﻿$ErrorActionPreference = 'Stop'
+$script:fontCache = @{}
 
+$fontFilesPath    = Join-Path $PSScriptRoot 'fonts'
+$controlFilesPath = Join-Path $PSScriptRoot 'control_files'
 <#
 .SYNOPSIS
 PowerShell implementation of the popular Figlet command line utility. Transforms
@@ -55,6 +58,12 @@ The default set of fonts are:
     banner, big, block, bubble, digital, ivrit, lean, mini, script, shadow, slant,
     small, smscript, smshadow, smslant, standard, term
 
+.PARAMETER ControlFile
+Optional. Name(s) or path(s) of one or more control file(s) used to remap characters.
+The built-in control files are:
+
+    digits_segmented, outlined, upper
+
 .PARAMETER ForegroundColor
 Optional. Foreground color of the output text.
 Available color choices are:
@@ -88,6 +97,9 @@ function Piglet
         [String]
         $Font = "standard",
 
+        [String[]]
+        $ControlFile,
+
         [System.ConsoleColor]
         $ForegroundColor,
 
@@ -100,10 +112,37 @@ function Piglet
 
     begin
     {
-        if (-not $script:fontCache[$Font]) {
-            $script:fontCache[$Font] = Get-FontInfo($Font)
+        $Font | ForEach-Object {
+            if ($_.EndsWith('.flf')) {
+                # Supplied with a path to a file
+                $_
+            }
+            else
+            {
+                # Supplied with a name of one of the internal files
+                Join-Path $fontFilesPath "$_.flf"
+            }
+        } | ForEach-Object {
+            if (-not $script:fontCache[$_]) {
+                $script:fontCache[$_] = Get-FontInfo($_)
+            }
+            $fontInfo = $script:fontCache[$_]
         }
-        $fontInfo = $script:fontCache[$Font]
+
+        [System.Collections.Generic.OrderedDictionary[int, int][]] $transformationStages = @()
+        if ($ControlFile) {
+            $transformationStages = $ControlFile | ForEach-Object {
+                if ($_.EndsWith('.flc')) {
+                    # We were supplied with a path to a file
+                    $_
+                }
+                else
+                {
+                    # We were supplied with a name of one of the internal files
+                    Join-Path $controlFilesPath "$_.flc"
+                }
+            } | Get-ControlInfo
+        }
     }
 
     process
@@ -117,6 +156,14 @@ function Piglet
             [System.Globalization.StringInfo]::GetTextElementEnumerator($Text) | ForEach-Object {
                 $charCode = [char]::ConvertToUtf32($_, 0)
 
+                # Apply transformations
+                $transformationStages | ForEach-Object {
+                    if ($_.ContainsKey($charCode)) {
+                        Write-Debug "    Transforming $charCode -> $($_[$charCode])"
+                        $charCode = $_[$charCode]
+                    }
+                }
+
                 if ($fontInfo.Characters.ContainsKey($charCode))
                 {
                     $fontChar = $fontInfo.Characters[$charCode]
@@ -127,10 +174,18 @@ function Piglet
                     $fontChar = $fontInfo.Characters[0]
                     $line += $fontChar[$i]
                 }
+
+                # While working on the first character of the first line of output, check if we need to trim leading
+                # spaces from all lines of the output. We can only do that if all lines of the first character start
+                # with a space.
+                if ($null -eq $firstCharStartsWithSpace) {
+                    $firstCharStartsWithSpace = ($fontChar -match '^ ').Count -eq $fontChar.Count
+                    Write-Debug "Line $i, checking for trim. Can be trimmed = $firstCharStartsWithSpace"
+                }
             }
 
             # remove leading space from output
-            if ($line[0] -eq " "){
+            if ($firstCharStartsWithSpace){
                 $line = $line.Substring(1)
             }
 
@@ -170,7 +225,7 @@ function Get-FontInfo
         $Font
     )
 
-    $fontFilePath = Join-Path $PSScriptRoot "fonts/$Font.flf"
+    $fontFilePath = Resolve-Path $Font
     Write-Verbose "Loading font from path $fontFilePath"
 
     if (!(Test-Path -Path $fontFilePath))
@@ -224,7 +279,7 @@ function Get-FontInfo
         $fontInfo.Comment[$i] = $fontFileReader.ReadLine()
     }
 
-    $fontChars = New-Object "System.Collections.Generic.Dictionary[int,string[]]"
+    $fontChars = New-Object "System.Collections.Generic.OrderedDictionary[int,string[]]"
 
     $requiredChars = @(32..126)
     $requiredChars += @(196, 214, 220, 228, 246, 252, 223)
@@ -279,6 +334,141 @@ function Get-NextFontChar
     return $charLines
 }
 
+function Convert-CharTokenToUint32 {
+    param(
+        [Parameter(Mandatory=$true)]
+        [String]
+        $Token
+    )
+    switch -Regex ($Token) {
+        # Hex (base 16) number
+        '^\\0x'    {
+            # Seen files that have each byte prefixed with '\0x' and figlet does not complain. We need to remove
+            # these sequences that are in the middle of the token to be able to parse to int
+            [Convert]::ToInt32(($Token.TrimStart('\') -replace '(?<=.)\\0x'), 16)
+            break
+        }
+        '^\\-?\d+' { [Convert]::ToInt32($Token.TrimStart('\'), 10); break }  # Number (base 10), could be negative
+        '^\\ '     { 32; break }  # space
+        '^\\a'     { 7;  break }  # bell/alert
+        '^\\b'     { 8;  break }  # backspace
+        '^\\e'     { 27; break }  # ESC character
+        '^\\f'     { 12; break }  # form feed
+        '^\\n'     { 10; break }  # newline/line feed
+        '^\\r'     { 13; break }  # carriage return
+        '^\\t'     { 9;  break }  # horizontal tab
+        '^\\v'     { 11; break }  # vertical tab
+        '^\\\\'    { 92; break }  # a backslash
+        default    { [int][char]$Token }  # any other character
+    }
+}
+
+function  Get-ControlInfo
+{
+    param(
+        [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+        [ValidateScript({
+            if (-not (Test-Path $_ -PathType Leaf)) {
+                throw [System.Management.Automation.ItemNotFoundException] "File '${_}' not found"
+            }
+            $true
+        })]
+        [String]
+        $ControlFile
+    )
+
+    begin {
+        $decNumber      = '[\-0-9]+'
+        $slashDecNumber = "\\$decNumber"
+
+        $hexNumber      = '0x[0-9a-zA-Z\\x]+'
+        $slashHexNumber = "\\$hexNumber"
+
+        $charToken      = "$slashHexNumber|$slashDecNumber|\S" # Order is important
+        $hexOrDecNumber = "$hexNumber|$decNumber" # These will not have the slash
+
+        $space          = '[\t ]+'  # Be flexible with separators - either tabs or spaces, one or more
+        $maybeComment   = "($space#.*)?"
+    }
+
+    process {
+        Write-Verbose "Loading control file from path $ControlFile"
+
+        $transformationStage = [System.Collections.Generic.OrderedDictionary[int, int]]::new()
+
+        switch -Regex -File $ControlFile {
+            '' {
+                Write-Debug "[Get-ControlInfo] Line: '$_'"
+            }
+
+            '^\s*(#|$)' {
+                continue # Ignore comments or empty lines
+            }
+
+            '^flc2a' {
+                continue # Ignore the optional flc file header, don't even check that it is on the 1st line
+            }
+
+            # For line: t inchar outchar
+            "^t$space(?<inchar>$charToken)$space(?<outchar>$charToken)$maybeComment" {
+                $inchar  = $Matches['inchar']
+                $outchar = $Matches['outchar']
+                Write-Debug "[Get-ControlInfo]    Single char: $inchar -> $outchar"
+                $transformationStage[(Convert-CharTokenToUint32 $inchar)] = Convert-CharTokenToUint32 $outchar
+                continue
+            }
+
+            # For line: t inchar1-inchar2 outchar1-outchar2
+            "^t$space(?<inchar1>$charToken)-(?<inchar2>$charToken)$space(?<outchar1>$charToken)-(?<outchar2>$charToken)$maybeComment" {
+                $inchar1  = $Matches['inchar1']
+                $inchar2  = $Matches['inchar2']
+                $outchar1 = $Matches['outchar1']
+                $outchar2 = $Matches['outchar2']
+
+                Write-Debug "[Get-ControlInfo]    Range: $inchar1..$inchar2 -> $outchar1..$outchar2"
+                $inRange  = (Convert-CharTokenToUint32 $inchar1)..(Convert-CharTokenToUint32 $inchar2)
+                $outRange = (Convert-CharTokenToUint32 $outchar1)..(Convert-CharTokenToUint32 $outchar2)
+
+                if ($inRange.Count -ne $outRange.Count) {
+                    throw "Input char range size $($inRange.Count) must match output range size $($outRange.Count). Line '$_'"
+                }
+
+                $inRange | ForEach-Object -Begin { $i = 0 } { $transformationStage[$_] = $outRange[($i++)] }
+                continue
+            }
+
+            # For line: number number
+            "^(?<number1>$hexOrDecNumber)$space(?<number2>$hexOrDecNumber)$maybeComment" {
+                $number1  = $Matches['number1']
+                $number2  = $Matches['number2']
+                Write-Debug "[Get-ControlInfo]    Single number: $number1 -> $number2"
+                $transformationStage[(Convert-CharTokenToUint32 "\$number1")] = Convert-CharTokenToUint32 "\$number2"
+                continue
+            }
+
+            '^f' {
+                # Return the current transformation stage and start a new one
+                Write-Debug "[Get-ControlInfo]    Starting a new transformation stage"
+                $transformationStage
+                $transformationStage = [System.Collections.Generic.OrderedDictionary[int, int]]::new()
+                continue
+            }
+
+            # Not implemented commands
+            '^h' { Write-Warning "HZ input mode not supported";                        continue }
+            '^j' { Write-Warning "Shift-JIS (aka. MS-Kanji) input mode not supported"; continue }
+            '^b' { Write-Warning "DBCS input mode not supported";                      continue }
+            '^u' { <# Piglet reads UTF-8 input by default #>                           continue }
+            '^g' { Write-Warning "ISO 2022 character sets not supported";              continue }
+
+            default { Write-Warning "Unrecognized command line: $_";                   continue }
+
+        }
+
+        $transformationStage
+    }
+}
+
 function Write-RainbowText
 {
     param(
@@ -309,7 +499,7 @@ function Write-RainbowText
     Write-Host ""
 }
 
-Register-ArgumentCompleter -CommandName Piglet,Get-FontInfo -ParameterName Font -ScriptBlock {
+$fontOrControlCompleter = {
     param (
         $commandName,
         $parameterName,
@@ -318,9 +508,27 @@ Register-ArgumentCompleter -CommandName Piglet,Get-FontInfo -ParameterName Font 
         $fakeBoundParameters
     )
 
+    switch ($parameterName) {
+        'Font' {
+            $fileDir   = $fontFilesPath
+            $extension = '.flf'
+            break
+        }
+        'ControlFile' {
+            $fileDir   = $controlFilesPath
+            $extension = '.flc'
+            break
+        }
+
+        default {}
+    }
+
     # Seems like it can be surrounded in quotes
     $wordToCompleteTrimmed = $wordToComplete.Trim("'`"")
-    (Get-ChildItem (Join-Path $PSScriptRoot "fonts") |
-        Where-Object { $_.BaseName -like "$wordToCompleteTrimmed*" } |
-        Where-Object { $_.Name.EndsWith('.flf')}).BaseName
+    (Get-ChildItem $fileDir |
+        Where-Object { $_.BaseName -like "*$wordToCompleteTrimmed*" } |
+        Where-Object { $_.Name.EndsWith($extension)}).BaseName
 }
+
+Register-ArgumentCompleter -CommandName Piglet,Get-FontInfo -ParameterName Font -ScriptBlock $fontOrControlCompleter
+Register-ArgumentCompleter -CommandName Piglet,Get-ControlInfo -ParameterName ControlFile -ScriptBlock $fontOrControlCompleter
