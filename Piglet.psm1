@@ -100,7 +100,9 @@ function Piglet
         [String[]]
         $ControlFile,
 
-        [System.ConsoleColor]
+        [ValidateSet('Black', 'Blue', 'Cyan', 'DarkBlue', 'DarkCyan', 'DarkGray', 'DarkGreen', 'DarkMagenta',
+                     'DarkRed', 'DarkYellow', 'Gray', 'Green', 'Magenta', 'Rainbow', 'Red', 'White', 'Yellow')]
+        [string]
         $ForegroundColor,
 
         [System.ConsoleColor]
