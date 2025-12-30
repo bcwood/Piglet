@@ -1,0 +1,3 @@
+flc2a
+# Convert regular digits to Unicode segmented digits
+t 0-9 \0x1FBF0-\0x1FBF9

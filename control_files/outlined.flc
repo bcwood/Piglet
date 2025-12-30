@@ -1,0 +1,4 @@
+flc2a
+# Convert to Unicode outlined symbols
+t A-Z \0x1CCD6-\0x1CCEF
+t 0-9 \0x1CCF0-\0x1CCF9
